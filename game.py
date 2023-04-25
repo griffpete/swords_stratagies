@@ -1,3 +1,5 @@
+import random
+
 def render_introduction():
     return '''
 
@@ -35,7 +37,7 @@ def create_map():
         'Home': {
             'about': 'home sweet home',
         },
-        'Gwynedd': {
+        'Gwyned': {
             'about': 'The great city of Gwynedd is gaurded by countless catapults that destroy enemies from afar',
             'stats': {'walls': 25, 'territory': 50,'defense': 50},
 
@@ -164,6 +166,7 @@ def helper():
         * attacks kingdom (get troops on victory, loose troops on defeat)
     """
 
+#Shows current number of troops
 def troops(world):
     print('Current troops: ')
     troops = world['player']['stats']
@@ -174,43 +177,91 @@ def troops(world):
 
     return info
 
+#shos name of kingdom and description
 def scout(world, command):
     name = command[6:]
     location = world['map'][name]
     about = location['about']
     return ("You are scouting " + name + "\n" + about + "\n")
 
+#uses a while loop to take input for ammount of troops if it is correct it will increase win, or increas loss
 def attack(world, command):
     name = command[7:]
     location = world['map'][name]
-    kingdom_stats = location['stats']
     player_stats = world['player']['stats']
     player_loses = world['player']['loses']
     player_wins = world['player']['wins']
+    player = world['player']
 
-    answer = ''
-    while answer not in options:
-        answer = input(' - ')
-        if answer not in options:
-            print('Invalid command- ' + answer)
-    
-    
-    if name == 'Elvandor':    
-        if True:
-            player_loses['loses'] += 1
-            return
-        else:
-            player_wins['wins'] += 1
-            return
+    rnjesus = random.randint(3, 8)
+    deployed = {}
+
+    #takes user input for troops, checks to make sure it is an integar and in the valid number range
+    for x in player_stats.keys():
+        correct_value = False
+        while correct_value == False:
+            try:
+                answer = int(input(x + ' (0 - ' + str(player_stats[x]) + ') - '))
+                if answer <= player_stats[x]:
+                    deployed[x] = answer
+                    player_stats[x] -= round(deployed[x] / rnjesus)
+                    correct_value = True
+                else:
+                    print('Invalid')
+            except ValueError:
+                print('Invalid')
+
+        
+    #takes new dictionary and sends it to see if attack was succesfull
+    if check_attack(world, deployed, name):
+        player_wins += 1
+        player['attacked'].append(name)
+        return "Victories Battle!"+ '\n' + 'You lost ' +str(rnjesus) + "0% of troops"
+    else:
+        player_loses += 1
+        return "Lost the battle!"+ '\n' + str(rnjesus) + "0% of troops fleed home"
        
-    elif name == 'Liagor':
-        return
-    elif name == 'Gwynedd':
-        return
-    elif name == 'Avalon':
-        return
-    return 
 
+#takes in new troops that where entered, and name of kingdom. compares it too kingdom stats to determine if the attack was successfull
+def check_attack(world, troops, name):
+    kingdom_stats = world['map'][name]['stats']
+    walls = kingdom_stats['walls']
+    terain = kingdom_stats['territory']
+    defense = kingdom_stats['defense']
+
+    win_rate = 0
+    trebuchets = troops['Trebuchets'] * 25
+    archers = troops['Archers']
+    cavalry = troops['Cavalry'] * 10
+    infantry = troops['Infantry']
+
+    #compares archers and trebuchets against walls
+    if trebuchets + archers >= walls:
+        win_rate += 5
+    elif trebuchets + archers >= walls / 2:
+        win_rate += 3
+    
+    #compares cavalry against the terrain
+    if cavalry >= terain:
+        win_rate += 5
+    elif cavalry >= terain / 2:
+        win_rate += 2
+
+    if infantry + archers >= defense:
+        win_rate += 6
+    elif infantry + archers >= defense / 2:
+        win_rate += 1
+
+    if win_rate >= 10:
+        return True
+    else:
+        return False
+    
+    #{'Archers': 15,'Infantry': 30,'Trebuchets': 2, 'Cavalry': 5}
+    #{'walls': 10, 'territory': 15,'defense': 10}
+
+
+#says all locations that have not been defeated yet
 def gps(world):
     unattacked_locations = []
     for location in world['map']:
