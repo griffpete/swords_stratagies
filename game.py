@@ -22,7 +22,11 @@ _____----- |     ]              [ ||||||| ]              [     |
 
 
 
-Welcome my Lord, type 'help' if needed for a list of commands
+Welcome my Lord, you are the commander of a great army. It is up to you to conquer the 5 kingdoms!
+It is advised to scout kingdoms before attacking, every castle has it's strengths and weaknesses.
+Good luck!
+
+*type 'help' if needed for a list of commands
 '''
 
 def create_world():
@@ -39,33 +43,38 @@ def create_map():
         },
         'Gwyned': {
             'about': 'The great city of Gwynedd is gaurded by countless catapults that destroy enemies from afar',
-            'stats': {'walls': 25, 'territory': 50,'defense': 50},
+            'stats': {'walls': 25, 'terain': 100,'defense': 50},
             'reward': {'Trebuchets': 5},
             'destroy': 'Infantry',
-            'death message': 'The great catapults destroyed all your infantry.'
+            'death message': 'The great catapults destroyed all your infantry.',
+            'victory message': 'The great catapults destroyed half your infantry'
 
         },
         'Elvandor': {
             'about': "A small castle gaurded by villagers, shouldn't take much to capture",
-            'stats': {'walls': 10, 'territory': 15,'defense': 10},
+            'stats': {'walls': 10, 'terain': 15,'defense': 10},
             'reward': {'Infantry': 25},
             'destroy': 'Archers',
-            'death message': 'The small castle stood strong and took all your archers as prisoners'
+            'death message': 'The small castle stood strong and took all your archers as prisoners',
+            'victory message': 'The small castle targeted your archers and killed off half'
+
 
         },    
         'Avalon': {
             'about': 'Monstrous walls that took 100 years to craft, the great castle of Avalon is said to be impenatrable...',
-            'stats': {'walls': 100, 'territory': 20,'defense': 75},
+            'stats': {'walls': 100, 'terain': 100,'defense': 100},
             'reward': {'Archers': 1000},
             'destroy': 'Cavalry',
-            'death message': 'The thousands of archers in the great wall killed off all of your horses'
+            'death message': 'The thousands of archers in the great wall killed off all of your horses',
+            'victory message': 'Your entire army died in the proccess, but you rule all the kingdoms now!'
         },
         'Liagor': {
             'about': 'The castle of Liagor is surronded by deep trenches full of spearmen',
-            'stats': {'walls': 10, 'territory': 100,'defense': 75},
+            'stats': {'walls': 10, 'terain': 25,'defense': 75},
             'reward': {'Cavalry': 10},
             'destroy': 'Trebuchets',
-            'death message': 'The trenches engoulfed any trebechets deployed.'
+            'death message': 'The trenches engoulfed any trebechets deployed.',
+            'victory message': 'The trenches destroyed half your trebuechets, be more carefull with them!'
         }
 
     
@@ -97,37 +106,24 @@ def render_player(world):
 
     if player['loses'] == 2:
         world['status'] = 'lost'
-        return 'Your army grew too weak'
+        return '\nYour army grew too weak' + "\nGame Over."
     elif player['wins'] == 4:
         world['status'] = 'won'
-        return 'You arise victories!'
+        return '\nYou arise victorious!' + "\nGreat Game."
     return ''
-
-#takes in number of victores and returns something an ally to be printed if victoers is meet
-def render_allies(world, name):
-    ally = {'name': 'none', 'description': 'none'}
-    if name == 'Harad':
-        ally['name'] = 'Harad'
-        ally['description'] = 'A noble king from the south with a prospericous army'
-
-    elif name == 'Belstead':
-        ally['name'] = 'Belstead'
-        ally['description'] = 'A rich lord from the west with a greed for weatlth'
-        
-    return ("You are approched by " + ally['name'] + "\n" + ally['description'] + "\n" + "Would you like to ally ('yes' / 'no')" + "\n")
 
 #figures out which commands are possible
 def get_options(world):
-    commands = ['quit', 'troops', 'help', 'yes', 'no', 'map']
+    if world['status'] != 'playing':
+        return ''
+    
+    commands = ['quit', 'troops', 'help', 'map']
       
     for location in world['map']:
         
         if location not in world['player']['attacked']:
             commands.append('scout ' + location)
-            commands.append('attack ' + location)
-
-
-                
+            commands.append('attack ' + location)          
     return commands
 
 #if a command is entered somthing happes
@@ -136,11 +132,6 @@ def update(world, command):
     if command == "quit":
         world['status'] = 'quit'
         return "Forfeiting war"
-    elif wins >= 2 and wins < 3:
-        return render_allies(world, 'Harad')
-    
-    elif wins >= 3 and wins < 4:
-        return render_allies(world, 'Belstead')
     
     elif command == 'troops':
         return troops(world)
@@ -157,7 +148,7 @@ def update(world, command):
     elif command == 'map':
         return gps(world)
             
-    return
+    return '---------'
 
 def helper():
     return """
@@ -196,15 +187,13 @@ def scout(world, command):
     about = location['about']
     return (name + ": " + about)
 
-#uses a while loop to take input for ammount of troops if it is correct it will increase win, or increas loss
+#uses a while loop to take input for ammount of troops if it is correct it will increase win, or increase loss
 def attack(world, command):
     name = command[7:]
     location = world['map'][name]
-    player_stats = world['player']['stats']
-    player_loses = world['player']['loses']
-    player_wins = world['player']['wins']
     player = world['player']
-
+    player_stats = player['stats']
+    
     rnjesus = random.randint(3, 8)
     deployed = {}
 
@@ -212,9 +201,19 @@ def attack(world, command):
     for x in player_stats.keys():
         correct_value = False
         while correct_value == False:
+            if player_stats[x] == 0:
+                correct_value = True
+                deployed[x] = 0
+                continue
+
             try:
-                answer = int(input(x + ' (0 - ' + str(player_stats[x]) + ') - '))
-                if answer <= player_stats[x]:
+                answer = input(x + ' (0 - ' + str(player_stats[x]) + ') - ')
+                if answer == "quit":
+                    world['status'] = 'quit'
+                    return "Forfeiting war"
+                
+                answer = int(answer)
+                if answer <= player_stats[x] and answer >= 0:
                     deployed[x] = answer
                     player_stats[x] -= round(deployed[x] / rnjesus)
                     correct_value = True
@@ -227,17 +226,20 @@ def attack(world, command):
     reward_value = list(location['reward'].values())[0]
     destroy = location['destroy']
     death_message = location['death message']
+    victory_message = location['victory message']
 
     #takes new dictionary and sends it to see if attack was succesfull
     if check_attack(world, deployed, name):
-        player_wins += 1
+        player['wins'] += 1
         player['attacked'].append(name)
         #adds reward to player inventory
         player_stats[reward_name] += reward_value
-        return "\nVictory!"+ '\n' + str(rnjesus) + "0% of troops survived" + "\nReward +" + str(reward_value) + ' ' +reward_name
+        player_stats[destroy] -= round(deployed[destroy] / 2)
+        return "\nVictory!"+ '\n' + str(rnjesus) + "0% of troops survived" + "\nReward +" + str(reward_value) + ' ' +reward_name + '\n' + victory_message
     else:
-        player_loses += 1
-        player_stats[destroy] = 0
+        player['loses'] += 1
+        player_stats[destroy] -= deployed[destroy]
+        player_stats[destroy] = max(0, player_stats[destroy])
         return "\nDefeat!"+ '\n' + str(10 - rnjesus) + "0% of troops fleed home" + "\n" + death_message
        
 
@@ -245,7 +247,7 @@ def attack(world, command):
 def check_attack(world, troops, name):
     kingdom_stats = world['map'][name]['stats']
     walls = kingdom_stats['walls']
-    terain = kingdom_stats['territory']
+    terain = kingdom_stats['terain']
     defense = kingdom_stats['defense']
 
     win_rate = 0
@@ -292,9 +294,9 @@ def gps(world):
 #renders the ending, there is only three
 def render_ending(world):
     if world['status'] == 'won':
-        return "Victory!"
+        return "Quiting game..."
     elif world['status'] == 'lost':
-        return "Defeat..."
+        return "Quiting game..."
     elif world['status'] == 'quit':
         return "Quiting game..."
 
