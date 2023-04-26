@@ -22,7 +22,7 @@ _____----- |     ]              [ ||||||| ]              [     |
 
 
 
-Welcome my Lord, you are the commander of a great army. It is up to you to conquer the 5 kingdoms!
+Welcome my Lord, you are the commander of a great army. It is up to you to conquer the 7 kingdoms!
 It is advised to scout kingdoms before attacking, every castle has it's strengths and weaknesses.
 Good luck!
 
@@ -38,31 +38,33 @@ def create_world():
 
 def create_map():
     return {
-        'Home': {
-            'about': 'home sweet home',
-        },
         'Gwyned': {
-            'about': 'The great city of Gwynedd is gaurded by countless catapults that destroy enemies from afar',
+            'about': 'The city of Gwynedd is known to drop massive boulders off its walls',
             'stats': {'walls': 25, 'terain': 100,'defense': 50},
             'reward': {'Trebuchets': 5},
             'destroy': 'Infantry',
-            'death message': 'The great catapults destroyed all your infantry.',
-            'victory message': 'The great catapults destroyed half your infantry'
-
+            'death message': 'The great boulders rolled through all your infantry.',
+            'victory message': 'The massive rocks squished most your infantry'
+        },
+        'Valoria': {
+            'about': "The wise city of Valoria is known for its talented archers",
+            'stats': {'walls': 75, 'terain': 75,'defense': 25},
+            'reward': {'Archers': 30},
+            'destroy': 'Infantry',
+            'death message': 'The archers picked off all of your infantry',
+            'victory message': 'A great number of infantry bled out from arrow wounds'
         },
         'Elvandor': {
-            'about': "A small castle gaurded by villagers, shouldn't take much to capture",
+            'about': "A small castle gaurded by villagers, they have a grudge against archers though...",
             'stats': {'walls': 10, 'terain': 15,'defense': 10},
             'reward': {'Infantry': 25},
             'destroy': 'Archers',
             'death message': 'The small castle stood strong and took all your archers as prisoners',
             'victory message': 'The small castle targeted your archers and killed off half'
-
-
         },    
         'Avalon': {
             'about': 'Monstrous walls that took 100 years to craft, the great castle of Avalon is said to be impenatrable...',
-            'stats': {'walls': 100, 'terain': 100,'defense': 100},
+            'stats': {'walls': 100, 'terain': 100,'defense': 50},
             'reward': {'Archers': 1000},
             'destroy': 'Cavalry',
             'death message': 'The thousands of archers in the great wall killed off all of your horses',
@@ -70,11 +72,19 @@ def create_map():
         },
         'Liagor': {
             'about': 'The castle of Liagor is surronded by deep trenches full of spearmen',
-            'stats': {'walls': 10, 'terain': 25,'defense': 75},
+            'stats': {'walls': 10, 'terain': 25,'defense': 50},
             'reward': {'Cavalry': 10},
             'destroy': 'Trebuchets',
             'death message': 'The trenches engoulfed any trebechets deployed.',
             'victory message': 'The trenches destroyed half your trebuechets, be more carefull with them!'
+        },
+        'Treland': {
+            'about': 'Treland loves to shoot fire balls from its trebuchets',
+            'stats': {'walls': 35, 'terain': 10,'defense': 50},
+            'reward': {'Trebuchets': 5},
+            'destroy': 'Cavalry',
+            'death message': 'The fire balls killed off all the horses!',
+            'victory message': "The fire scared off a good portion of the horses, should've seen that coming"
         }
 
     
@@ -86,7 +96,7 @@ def create_player():
         'location': 'home',
         'stats': {'Archers': 15,'Infantry': 30,'Trebuchets': 2, 'Cavalry': 5},
         'wins': 0,
-        'attacked':['Home'],
+        'attacked':[],
         'loses': 0
     }
 
@@ -107,7 +117,7 @@ def render_player(world):
     if player['loses'] == 2:
         world['status'] = 'lost'
         return '\nYour army grew too weak' + "\nGame Over."
-    elif player['wins'] == 4:
+    elif player['wins'] == 6:
         world['status'] = 'won'
         return '\nYou arise victorious!' + "\nGreat Game."
     return ''
@@ -171,14 +181,13 @@ def helper():
 
 #Shows current number of troops
 def troops(world):
-    print('Current troops: ')
     troops = world['player']['stats']
     info = ''
     for troop, number in troops.items():
         info += f'{troop} ({number}), '
     info = info.rstrip(', ')
 
-    return info
+    return 'Current troops:' + '\n' + str(info)
 
 #shos name of kingdom and description
 def scout(world, command):
@@ -218,9 +227,9 @@ def attack(world, command):
                     player_stats[x] -= round(deployed[x] / rnjesus)
                     correct_value = True
                 else:
-                    print('Invalid')
+                    return('Invalid')
             except ValueError:
-                print('Invalid')
+                return('Invalid')
 
     reward_name = next(iter(location['reward']))
     reward_value = list(location['reward'].values())[0]
@@ -235,12 +244,12 @@ def attack(world, command):
         #adds reward to player inventory
         player_stats[reward_name] += reward_value
         player_stats[destroy] -= round(deployed[destroy] / 2)
-        return "\nVictory!"+ '\n' + str(rnjesus) + "0% of troops survived" + "\nReward +" + str(reward_value) + ' ' +reward_name + '\n' + victory_message
+        return "\nVictory!"+ '\n' + str(10 - rnjesus) + "0% of troops died in battle" + "\nReward +" + str(reward_value) + ' ' +reward_name + '\n' + victory_message
     else:
         player['loses'] += 1
         player_stats[destroy] -= deployed[destroy]
         player_stats[destroy] = max(0, player_stats[destroy])
-        return "\nDefeat!"+ '\n' + str(10 - rnjesus) + "0% of troops fleed home" + "\n" + death_message
+        return "\nDefeat!"+ '\n' + str(rnjesus) + "0% of troops retreated home" + "\n" + death_message
        
 
 #takes in new troops that where entered, and name of kingdom. compares it too kingdom stats to determine if the attack was successfull
@@ -251,7 +260,7 @@ def check_attack(world, troops, name):
     defense = kingdom_stats['defense']
 
     win_rate = 0
-    trebuchets = troops['Trebuchets'] * 25
+    trebuchets = troops['Trebuchets'] * 10
     archers = troops['Archers']
     cavalry = troops['Cavalry'] * 10
     infantry = troops['Infantry']
@@ -272,7 +281,7 @@ def check_attack(world, troops, name):
     if infantry + archers >= defense:
         win_rate += 6
     elif infantry + archers >= defense / 2:
-        win_rate += 1
+        win_rate += 3
 
     if win_rate >= 10:
         return True
