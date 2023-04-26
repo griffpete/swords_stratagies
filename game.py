@@ -40,20 +40,32 @@ def create_map():
         'Gwyned': {
             'about': 'The great city of Gwynedd is gaurded by countless catapults that destroy enemies from afar',
             'stats': {'walls': 25, 'territory': 50,'defense': 50},
+            'reward': {'Trebuchets': 5},
+            'destroy': 'Infantry',
+            'death message': 'The great catapults destroyed all your infantry.'
 
         },
         'Elvandor': {
             'about': "A small castle gaurded by villagers, shouldn't take much to capture",
             'stats': {'walls': 10, 'territory': 15,'defense': 10},
-        },
-                
+            'reward': {'Infantry': 25},
+            'destroy': 'Archers',
+            'death message': 'The small castle stood strong and took all your archers as prisoners'
+
+        },    
         'Avalon': {
             'about': 'Monstrous walls that took 100 years to craft, the great castle of Avalon is said to be impenatrable...',
             'stats': {'walls': 100, 'territory': 20,'defense': 75},
+            'reward': {'Archers': 1000},
+            'destroy': 'Cavalry',
+            'death message': 'The thousands of archers in the great wall killed off all of your horses'
         },
         'Liagor': {
             'about': 'The castle of Liagor is surronded by deep trenches full of spearmen',
             'stats': {'walls': 10, 'territory': 100,'defense': 75},
+            'reward': {'Cavalry': 10},
+            'destroy': 'Trebuchets',
+            'death message': 'The trenches engoulfed any trebechets deployed.'
         }
 
     
@@ -154,7 +166,7 @@ def helper():
         * ends the game
 
     - map
-        *shows kingdoms around you that are available to attack
+        * shows kingdoms around you that are available to attack
         
     - troops
         * shows currents troops in castle
@@ -182,7 +194,7 @@ def scout(world, command):
     name = command[6:]
     location = world['map'][name]
     about = location['about']
-    return ("You are scouting " + name + "\n" + about + "\n")
+    return (name + ": " + about)
 
 #uses a while loop to take input for ammount of troops if it is correct it will increase win, or increas loss
 def attack(world, command):
@@ -211,15 +223,22 @@ def attack(world, command):
             except ValueError:
                 print('Invalid')
 
-        
+    reward_name = next(iter(location['reward']))
+    reward_value = list(location['reward'].values())[0]
+    destroy = location['destroy']
+    death_message = location['death message']
+
     #takes new dictionary and sends it to see if attack was succesfull
     if check_attack(world, deployed, name):
         player_wins += 1
         player['attacked'].append(name)
-        return "Victories Battle!"+ '\n' + 'You lost ' +str(rnjesus) + "0% of troops"
+        #adds reward to player inventory
+        player_stats[reward_name] += reward_value
+        return "\nVictory!"+ '\n' + str(rnjesus) + "0% of troops survived" + "\nReward +" + str(reward_value) + ' ' +reward_name
     else:
         player_loses += 1
-        return "Lost the battle!"+ '\n' + str(rnjesus) + "0% of troops fleed home"
+        player_stats[destroy] = 0
+        return "\nDefeat!"+ '\n' + str(10 - rnjesus) + "0% of troops fleed home" + "\n" + death_message
        
 
 #takes in new troops that where entered, and name of kingdom. compares it too kingdom stats to determine if the attack was successfull
@@ -247,6 +266,7 @@ def check_attack(world, troops, name):
     elif cavalry >= terain / 2:
         win_rate += 2
 
+    #infantry and archers against defense
     if infantry + archers >= defense:
         win_rate += 6
     elif infantry + archers >= defense / 2:
